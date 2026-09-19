@@ -1,0 +1,13 @@
+# Build artifacts
+iptv
+iptv.exe
+
+# Logs
+*.log
+
+# Local probe output (CI generates the *_cn / *_global variants)
+live.m3u
+report.json
+
+# IDE
+.idea/

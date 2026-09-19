@@ -1,0 +1,39 @@
+name: Probe Global IPTV Sources
+
+on:
+  schedule:
+    # Every 4 hours, at minute 30 (UTC). Staggered from the CN job.
+    - cron: '30 */4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe-global:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: Build
+        run: go build -o iptv .
+
+      - name: Probe global sources
+        run: ./iptv -region global -out live_global.m3u -report report_global.json -workers 60 -timeout 8
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add live_global.m3u report_global.json
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "chore: update global live list"
+            git push
+          fi

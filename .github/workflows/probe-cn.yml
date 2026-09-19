@@ -1,0 +1,39 @@
+name: Probe CN IPTV Sources
+
+on:
+  schedule:
+    # Every 4 hours, at minute 0 (UTC). Staggered from the global job.
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe-cn:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27'
+
+      - name: Build
+        run: go build -o iptv .
+
+      - name: Probe China-compliant sources
+        run: ./iptv -region cn -out live_cn.m3u -report report_cn.json -workers 60 -timeout 8
+
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add live_cn.m3u report_cn.json
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "chore: update CN live list"
+            git push
+          fi
